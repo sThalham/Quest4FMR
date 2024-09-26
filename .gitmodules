@@ -1,0 +1,18 @@
+[submodule "GLIP"]
+	path = GLIP
+	url = https://github.com/microsoft/GLIP.git
+[submodule "multimodal"]
+	path = multimodal
+	url = https://github.com/facebookresearch/multimodal.git
+[submodule "octo"]
+	path = octo
+	url = https://github.com/octo-models/octo.git
+[submodule "rt-x"]
+	path = rt-x
+	url = https://github.com/google-research/robotics_transformer.git
+[submodule "sd-dino"]
+	path = sd-dino
+	url = https://github.com/Junyi42/sd-dino.git
+[submodule "diffseg"]
+	path = diffseg
+	url = https://github.com/google/diffseg.git
