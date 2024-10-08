@@ -2,24 +2,13 @@ import torch
 from PIL import Image
 import torchvision.transforms as transforms
 
-# Flava import
-from torchmultimodal.models.flava.model import flava_model
-#from torchmultimodal.models.flava.data.transforms import (
-#    default_image_pretraining_transforms,
-#    default_text_transform,
-#)
-
-from torchmultimodal.models.blip2.blip2 import BLIP2
-#from multimodal.examples.flava.data import default_text_transform
-#from flava.data import default_image_pretraining_transforms
+from octo.octo.model.octo_model import OctoModel
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # Flava
-    vl_model = flava_model(pretrained=True)
-    # BLIP
-    #vl_model = BLIP2()
+    model_path = "/home/stefan/Data/MMFMR/octo/octo_small"
+    vl_model = OctoModel.load_pretrained(model_path)
 
     vl_model = vl_model.to(device)
     #vl_model.eval()
