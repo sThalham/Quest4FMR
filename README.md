@@ -1,7 +1,7 @@
 # Quest4FMR
 
 ## Introduction
-**TorchMultimodal** This repository contains functions for extracting the spatial tokens of different Vision-Language foundation models.
+**Multimodal Foundation Models for Robotics** This repository contains functions for extracting the spatial tokens of different Vision-Language foundation models.
 
 ## Installation
 
