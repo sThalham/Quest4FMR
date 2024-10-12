@@ -41,8 +41,10 @@ Only model supported for now is CLIP.
     ```
     conda create -n glip python=3.10
     conda activate glip
+    ```
 
 2. Install pytorch and other dependencies
+    ```
     # Tested with NVIDIA driver 530.30.02 and Cuda 12.1
     # Select the nightly Pytorch build, Linux as the OS, and conda. Pick the most recent CUDA version.
     conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch-nightly -c nvidia
