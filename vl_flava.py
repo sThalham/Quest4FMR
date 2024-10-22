@@ -12,6 +12,7 @@ from torch import nn, Tensor
 from typing import Any, Callable, List, Optional, Tuple, Union
 from torchmultimodal.models.flava.image_encoder import flava_image_encoder
 from torchmultimodal.models.flava.text_encoder import flava_text_encoder
+from multimodal.multimodal.examples.mugen.data.bert_text_transform import BertTextTransform
 from torchmultimodal.utils.common import load_module_from_url, ModelOutput
 from sklearn.decomposition import PCA
 from torchvision import transforms as th_transforms
@@ -126,13 +127,14 @@ def main():
     vl_model = vl_model.to(device)
     #vl_model.eval()
 
+    text_transform = BertTextTransform()
     torch_transform = th_transforms.Compose([
         th_transforms.Resize(im_size),
         th_transforms.ToTensor(),
         th_transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
     ])
 
-    img_path = "/home/stefan/Quest4FMR/images/query_1.png"
+    img_path = "/home/stefan/Quest4FMR/images/query_0.png"
     with Image.open(img_path) as im:
         im_og = (np.array(im) * (1 / 255))
         o_height, o_width, _ = im_og.shape
@@ -140,11 +142,16 @@ def main():
         image_batch = torch_transform(im)
         image_batch = torch.unsqueeze(image_batch, 0).to(device)
 
-        #_, text_emb = flava.encode_text(text.to(device), projection=True)
+    text = text_transform('cat')
+
+    text_emb = vl_model.encode_text(text.to(device), projection=False)
     img_emb = vl_model.encode_image(image_batch, projection=False)
     img_emb = img_emb.last_hidden_state[:, 1:, :]
+    print('text emb: ', text_emb.shape)
+
+    b, tokens_text, feat_text = text_emb.shape
+    text_emb = img_emb.detach().cpu()
     b, tokens, feat = img_emb.shape
-    #img_emb = img_emb.view(b, int(math.sqrt(tokens)), int(math.sqrt(tokens)), feat)
     img_emb = img_emb.detach().cpu()
 
     # stupid projection to image space
