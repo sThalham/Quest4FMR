@@ -15,6 +15,13 @@ from torchmultimodal.models.flava.text_encoder import flava_text_encoder
 from torchmultimodal.utils.common import load_module_from_url, ModelOutput
 from sklearn.decomposition import PCA
 from torchvision import transforms as th_transforms
+from torchmultimodal.transforms.flava_transform import FLAVAImageTransform
+from torchmultimodal.transforms.clip_transform import CLIPTextTransform
+
+import sys
+# caution: path[0] is reserved for script path (or '' in REPL)
+sys.path.append('/home/stefan/multimodal/examples/flava/data')
+
 
 CKPT_KEY = "flava_full"
 FLAVA_MODEL_MAPPING = {
@@ -119,33 +126,51 @@ def flava_model(
 
 
 def main():
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
 
     im_size = (224, 224)
     vl_model = flava_model(pretrained=True)
     vl_model = vl_model.to(device)
     #vl_model.eval()
+    text_transform = CLIPTextTransform()
+    #text_transform = BertTextTransform
+    img_transform = FLAVAImageTransform(is_train=False)
 
     torch_transform = th_transforms.Compose([
         th_transforms.Resize(im_size),
         th_transforms.ToTensor(),
-        th_transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+        #th_transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
     ])
 
-    img_path = "/home/stefan/Quest4FMR/images/query_1.png"
+    img_path = "/home/stefan/Quest4FMR/images/query_2.png"
     with Image.open(img_path) as im:
         im_og = (np.array(im) * (1 / 255))
         o_height, o_width, _ = im_og.shape
         print(o_height, o_width)
-        image_batch = torch_transform(im)
-        image_batch = torch.unsqueeze(image_batch, 0).to(device)
 
-        #_, text_emb = flava.encode_text(text.to(device), projection=True)
-    img_emb = vl_model.encode_image(image_batch, projection=False)
-    img_emb = img_emb.last_hidden_state[:, 1:, :]
-    b, tokens, feat = img_emb.shape
+        #image_batch = torch_transform(im)
+        #image_batch = torch.unsqueeze(image_batch, 0).to(device)
+        #text = ["A toy cat standing on a table.", "A pink cat seen from above.", "A cat in a clutter"]
+        #text = ["A toy cat standing on a table.", "A pink cat seen from above.", "A cat in a clutter"]
+        text = ["cat", "toy", "clutter"]
+        #text = ["A pink toy cat."]
+
+    with torch.no_grad():
+        image_batch = img_transform(im)
+        image_tf = list(image_batch.values())[0]
+        image_tf = torch.unsqueeze(image_tf, 0)
+        #print(next(iter(image_batch.values())).shape)
+        #print(np.nanmin(image_tf), np.nanmax(image_tf))
+        text_t = text_transform(text)
+        print(text_t.shape)
+        text_emb = vl_model.encode_text(text_t, projection=True)
+        #print('text embedding: ', text_emb.shape)
+        img_emb = vl_model.encode_image(image_tf, projection=False)
+        img_emb = img_emb.last_hidden_state[:, 1:, :]
+        b, tokens, feat = img_emb.shape
     #img_emb = img_emb.view(b, int(math.sqrt(tokens)), int(math.sqrt(tokens)), feat)
-    img_emb = img_emb.detach().cpu()
+        img_emb = img_emb.detach().cpu()
 
     # stupid projection to image space
     pca = PCA(n_components=3, svd_solver='full')

@@ -93,7 +93,7 @@ def main():
 
     glip_l_config = "configs/glip_Swin_L.yaml"
     glip_l_swin = ""
-    glip_l_model = ""
+    glip_l_model = "https://huggingface.co/GLIPModel/GLIP/blob/main/glip_large_model.pth"
 
     if not torch.cuda.is_available():
         state_dict = torch.load(glip_t_model, map_location=torch.device("cpu"))

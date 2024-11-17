@@ -17,6 +17,7 @@ from torchmultimodal.modules.layers.normalizations import Fp32LayerNorm
 from torchmultimodal.models.clip.model import CLIP
 from torchmultimodal.models.clip.image_encoder import CLIPViTEncoder, ResNetForCLIP
 from torchmultimodal.models.clip.text_encoder import CLIPTextEncoder
+from torchmultimodal.transforms.clip_transform import CLIPTextTransform
 from torchmultimodal.utils.common import load_module_from_url
 
 
@@ -127,7 +128,8 @@ class CLIPViTEncoderOverloaded(nn.Module):
         x_cls = self.ln_post(x[:, 0, :])
         x_cls = x_cls @ self.projection
 
-        return self.ln_post(x[:, 1:, :])
+        #return self.ln_post(x[:, 1:, :])
+        return x_cls
 
 
 class ClipOverloaded(CLIP):
@@ -151,12 +153,16 @@ class ClipOverloaded(CLIP):
     def forward(
         self,
         features_a: torch.Tensor,
+        features_b: torch.Tensor,
     ):
 
         embeddings_a = self.encoder_a(features_a)
         #embeddings_a = embeddings_a @ self.token_projection
         embeddings_a = F.normalize(embeddings_a)
-        return embeddings_a
+        embeddings_b = self.encoder_b(features_b)
+        # embeddings_a = embeddings_a @ self.token_projection
+        embeddings_b = F.normalize(embeddings_b)
+        return embeddings_a, embeddings_b
 
     def transform_img(self, image):
         return self.torch_transform(image)
@@ -196,6 +202,7 @@ def main():
     vl_model = clip_vit_b16(pretrained=True)
     vl_model = vl_model.to(device)
 
+    text_transform = CLIPTextTransform()
     torch_transform = th_transforms.Compose([
         th_transforms.Resize(im_size),
         th_transforms.ToTensor(),
@@ -210,9 +217,18 @@ def main():
         image_batch = torch_transform(im)
         image_batch = torch.unsqueeze(image_batch, 0).to(device)
 
-    embedding = vl_model(image_batch)
+    #text = ["cat", "toy", "clutter"]
+    #text = ["toy cat"]
+    text = ["This is a toy cat."]
+    #text = ["A plane."]
 
-    img_emb = embedding.detach().cpu()
+    text_batch = text_transform(text)
+    print('text_t: ', text_batch)
+
+    img_embedding, txt_embedding = vl_model(image_batch, text_batch.to(device))
+    print('embeddings: ', img_embedding.shape, txt_embedding.shape)
+
+    img_emb = img_embedding.detach().cpu()
     b, tokens, feat = img_emb.shape
     # img_emb = img_emb.view(b, int(math.sqrt(tokens)), int(math.sqrt(tokens)), feat)
     img_emb = img_emb.detach().cpu()

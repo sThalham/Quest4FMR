@@ -35,6 +35,24 @@ Only model supported for now is CLIP.
 
 4. Check out instantiated and modified CLIP: [vl_clip.py](https://github.com/sThalham/Quest4FMR/blob/main/vl_clip.py), Flava: [vl_flava.py](https://github.com/sThalham/Quest4FMR/blob/main/vl_flava.py), and CoCa: [vl_coca.py](https://github.com/sThalham/Quest4FMR/blob/main/vl_coca.py) 
 
+
+### OV-Dino
+1. Install conda environment
+
+    '''
+    conda create -n ov-dino python=3.10
+    conda activate ov-dino
+    '''
+
+2. Install according to the Installation guide in GLIPv2: [OV-DINO](https://github.com/wanghao9610/OV-DINO)
+
+    '''
+    # modify the following lines
+    export CUDA_HOME="/usr/local/cuda"
+    conda install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 pytorch-cuda=12.1 -c pytorch -c nvidia -y 
+    python -m pip install git+https://github.com/facebookresearch/detectron2.git@717ab9f0aeca216a2f800e43d705766251ba3a55
+    '''
+
 ### GLIP
 1. Install conda environment
 
