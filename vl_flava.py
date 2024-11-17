@@ -12,6 +12,7 @@ from torch import nn, Tensor
 from typing import Any, Callable, List, Optional, Tuple, Union
 from torchmultimodal.models.flava.image_encoder import flava_image_encoder
 from torchmultimodal.models.flava.text_encoder import flava_text_encoder
+from multimodal.multimodal.examples.mugen.data.bert_text_transform import BertTextTransform
 from torchmultimodal.utils.common import load_module_from_url, ModelOutput
 from sklearn.decomposition import PCA
 from torchvision import transforms as th_transforms
@@ -137,13 +138,14 @@ def main():
     #text_transform = BertTextTransform
     img_transform = FLAVAImageTransform(is_train=False)
 
+    text_transform = BertTextTransform()
     torch_transform = th_transforms.Compose([
         th_transforms.Resize(im_size),
         th_transforms.ToTensor(),
         #th_transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
     ])
 
-    img_path = "/home/stefan/Quest4FMR/images/query_2.png"
+    img_path = "/home/stefan/Quest4FMR/images/query_0.png"
     with Image.open(img_path) as im:
         im_og = (np.array(im) * (1 / 255))
         o_height, o_width, _ = im_og.shape
