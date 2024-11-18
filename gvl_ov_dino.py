@@ -23,17 +23,33 @@ from detectron2.engine import (
 
 def main(args):
     cfg = LazyConfig.load('/home/stefan/Quest4FMR/configs/ovdino_base_eval_coco.py')
+    cfg_model = "/home/stefan/Quest4FMR/configs/models/ov_dino/ovdino_swint_og-coco50.6_lvismv39.4_lvis32.2.pth"
     cfg = LazyConfig.apply_overrides(cfg, args.opts)
     default_setup(cfg, args)
 
-    model_path = 'https://huggingface.co/hao9610/OV-DINO/resolve/main/ovdino_swint_og-coco50.6_lvismv39.4_lvis32.2.pth'
-    if not torch.cuda.is_available():
-        state_dict = torch.load(glip_t_model, map_location=torch.device("cpu"))
-    else:
-        state_dict = torch.load(glip_t_model)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(device)
+
+    #model_path = 'https://huggingface.co/hao9610/OV-DINO/resolve/main/ovdino_swint_og-coco50.6_lvismv39.4_lvis32.2.pth'
+    # Load the state_dict from the URL
+    #state_dict = torch.hub.load_state_dict_from_url(model_path)
+    model = instantiate(cfg_model)
+    model.to(device)
+    model = create_ddp_model(model)
+
+    # Load the state_dict into the model
+    model.load_state_dict(state_dict)
+
+    #model_path = 'https://huggingface.co/hao9610/OV-DINO/resolve/main/ovdino_swint_og-coco50.6_lvismv39.4_lvis32.2.pth'
+    # Load the state_dict from the URL
+    #state_dict = torch.hub.load_state_dict_from_url(model_path)
 
     model = instantiate(cfg.model)
-    model.to(cfg.train.device)
+    # Load the state_dict into the model
+    model.load_state_dict(state_dict)
+
+
+    model.to(device)
     model = create_ddp_model(model)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

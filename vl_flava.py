@@ -127,8 +127,8 @@ def flava_model(
 
 
 def main():
-    #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = torch.device("cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #device = torch.device("cpu")
 
     im_size = (224, 224)
     vl_model = flava_model(pretrained=True)
