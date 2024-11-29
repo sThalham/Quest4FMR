@@ -2,15 +2,17 @@ import torch
 from PIL import Image
 from torchvision import transforms as th_transforms
 from torch import nn
-from transformers import AutoProcessor, AutoModelForZeroShotObjectDetection
+from transformers import AutoProcessor, LlavaOnevisionForConditionalGeneration
 from PIL import Image
-import requests
 
 from matplotlib import pyplot as plt
 import numpy as np
 import math
 from sklearn.decomposition import PCA
 import cv2
+
+import torch.nn.functional as F
+from torch import nn, Tensor
 
 
 def main():
@@ -19,40 +21,53 @@ def main():
     im_size = (224, 224)
     # model instantiation
 
+    import requests
+    from PIL import Image
+
+    model_id = "llava-hf/llava-onevision-qwen2-0.5b-ov-hf"
+    model = LlavaOnevisionForConditionalGeneration.from_pretrained(
+        model_id,
+        torch_dtype=torch.float16,
+        low_cpu_mem_usage=True,
+    ).to(device)
+
+    processor = AutoProcessor.from_pretrained(model_id)
+
+    # Define a chat history and use `apply_chat_template` to get correctly formatted prompt
+    # Each value in "content" has to be a list of dicts with types ("text", "image")
+    conversation = [
+        {
+
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "What are these?"},
+                {"type": "image"},
+            ],
+        },
+    ]
+    prompt = processor.apply_chat_template(conversation, add_generation_prompt=True)
+
     img_path = "images/query_2.png"
     with Image.open(img_path) as im:
-        im_og = (np.array(im) * (1 / 255))
-        o_height, o_width, _ = im_og.shape
-        #print(o_height, o_width)
-        #image_batch = torch_transform(im)
-        #image_batch = torch.unsqueeze(image_batch, 0).to(device)
+        raw_image = np.array(im)
+        o_height, o_width, _ = raw_image.shape
+        #raw_image = (np.array(im) * (1 / 255))
 
-    model_id = "IDEA-Research/grounding-dino-tiny"
-    processor = AutoProcessor.from_pretrained(model_id)
-    model = AutoModelForZeroShotObjectDetection.from_pretrained(model_id).to(device)
+    inputs = processor(images=raw_image, text=prompt, return_tensors='pt').to(device, torch.float16)
 
-    # Check for cats and remote controls
-    text = "a cat."
-
-    inputs = processor(images=im_og, text=text, return_tensors="pt").to(device)
-
-    with torch.no_grad():
-        outputs = model(**inputs, output_hidden_states=True)
-
-    decoder_hidden_states = outputs.decoder_hidden_states
-    vision_encoder_hidden_states = outputs.encoder_vision_hidden_states
+    #output = model.generate(**inputs, max_new_tokens=200, do_sample=False)
+    outputs = model(**inputs)
 
     print("loop through model outputs")
     for idx, whatever in enumerate(outputs):
         print(idx, whatever)
 
-    for idx, vision_emb in enumerate(vision_encoder_hidden_states):
-        print(idx, vision_emb.shape)
+    last_hidden_states = outputs[2]
+    print(last_hidden_states.shape)
+    #print(processor.decode(output[0][2:], skip_special_tokens=True))
 
-    hidden_states = outputs.decoder_hidden_states
-    print(outputs.encoder_last_hidden_state_vision.shape)
-    img_emb = decoder_hidden_states[6].detach().cpu()
-    #img_emb = img_emb[:, 1:, :]
+    img_emb = last_hidden_states.detach().cpu()
+    img_emb = img_emb[:, 1:, :]
     b, tokens, feat = img_emb.shape
     # img_emb = img_emb.view(b, int(math.sqrt(tokens)), int(math.sqrt(tokens)), feat)
     img_emb = img_emb.detach().cpu()
@@ -62,6 +77,7 @@ def main():
     img_viz = img_emb[0, ...]
     img_viz = pca.fit_transform(img_viz)
     # img_viz = pca.transform(img_viz)
+    print(img_viz.shape)
     img_viz = np.reshape(img_viz, (int(math.sqrt(tokens)), int(math.sqrt(tokens)), 3))
     print(img_viz.shape)
 

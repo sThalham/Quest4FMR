@@ -2,7 +2,7 @@ import torch
 from PIL import Image
 from torchvision import transforms as th_transforms
 from torch import nn
-from transformers import AutoProcessor, AutoModelForZeroShotObjectDetection
+from transformers import AutoImageProcessor, AutoModel
 from PIL import Image
 import requests
 
@@ -11,6 +11,9 @@ import numpy as np
 import math
 from sklearn.decomposition import PCA
 import cv2
+
+import torch.nn.functional as F
+from torch import nn, Tensor
 
 
 def main():
@@ -27,32 +30,24 @@ def main():
         #image_batch = torch_transform(im)
         #image_batch = torch.unsqueeze(image_batch, 0).to(device)
 
-    model_id = "IDEA-Research/grounding-dino-tiny"
-    processor = AutoProcessor.from_pretrained(model_id)
-    model = AutoModelForZeroShotObjectDetection.from_pretrained(model_id).to(device)
+    processor = AutoImageProcessor.from_pretrained('facebook/dinov2-base')
+    model = AutoModel.from_pretrained('facebook/dinov2-base')
 
-    # Check for cats and remote controls
-    text = "a cat."
+    inputs = processor(images=im_og, return_tensors="pt")
+    outputs = model(**inputs)
+    last_hidden_states = outputs[0]
 
-    inputs = processor(images=im_og, text=text, return_tensors="pt").to(device)
+    # We have to force return_dict=False for tracing
+    model.config.return_dict = False
 
     with torch.no_grad():
-        outputs = model(**inputs, output_hidden_states=True)
+        traced_model = torch.jit.trace(model, [inputs.pixel_values])
+        traced_outputs = traced_model(inputs.pixel_values)
 
-    decoder_hidden_states = outputs.decoder_hidden_states
-    vision_encoder_hidden_states = outputs.encoder_vision_hidden_states
+    print((last_hidden_states - traced_outputs[0]).abs().max())
 
-    print("loop through model outputs")
-    for idx, whatever in enumerate(outputs):
-        print(idx, whatever)
-
-    for idx, vision_emb in enumerate(vision_encoder_hidden_states):
-        print(idx, vision_emb.shape)
-
-    hidden_states = outputs.decoder_hidden_states
-    print(outputs.encoder_last_hidden_state_vision.shape)
-    img_emb = decoder_hidden_states[6].detach().cpu()
-    #img_emb = img_emb[:, 1:, :]
+    img_emb = last_hidden_states.detach().cpu()
+    img_emb = img_emb[:, 1:, :]
     b, tokens, feat = img_emb.shape
     # img_emb = img_emb.view(b, int(math.sqrt(tokens)), int(math.sqrt(tokens)), feat)
     img_emb = img_emb.detach().cpu()
@@ -62,6 +57,7 @@ def main():
     img_viz = img_emb[0, ...]
     img_viz = pca.fit_transform(img_viz)
     # img_viz = pca.transform(img_viz)
+    print(img_viz.shape)
     img_viz = np.reshape(img_viz, (int(math.sqrt(tokens)), int(math.sqrt(tokens)), 3))
     print(img_viz.shape)
 
