@@ -128,8 +128,8 @@ class CLIPViTEncoderOverloaded(nn.Module):
         x_cls = self.ln_post(x[:, 0, :])
         x_cls = x_cls @ self.projection
 
-        #return self.ln_post(x[:, 1:, :])
-        return x_cls
+        return self.ln_post(x[:, 1:, :])
+        #return x_cls
 
 
 class ClipOverloaded(CLIP):
@@ -217,13 +217,8 @@ def main():
         image_batch = torch_transform(im)
         image_batch = torch.unsqueeze(image_batch, 0).to(device)
 
-    #text = ["cat", "toy", "clutter"]
-    #text = ["toy cat"]
     text = ["This is a toy cat."]
-    #text = ["A plane."]
-
     text_batch = text_transform(text)
-    print('text_t: ', text_batch)
 
     img_embedding, txt_embedding = vl_model(image_batch, text_batch.to(device))
     print('embeddings: ', img_embedding.shape, txt_embedding.shape)
