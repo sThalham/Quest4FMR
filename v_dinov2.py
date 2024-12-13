@@ -34,7 +34,14 @@ def main():
     model = AutoModel.from_pretrained('facebook/dinov2-base')
 
     inputs = processor(images=im_og, return_tensors="pt")
-    outputs = model(**inputs)
+    outputs = model(**inputs, output_attentions=True)
+    attentions = outputs.attentions
+
+    print(attentions)
+
+    for i, lay in enumerate(attentions):
+        print(i, lay.shape)
+
     last_hidden_states = outputs[0]
 
     # We have to force return_dict=False for tracing

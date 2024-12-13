@@ -33,15 +33,20 @@ def main():
     inputs = processor(text=["a cat"], images=im_og, return_tensors="pt", padding=True)
 
     with torch.no_grad():
-        outputs = model(**inputs, output_hidden_states=True)
+        outputs = model(**inputs, output_hidden_states=True, output_attentions=True)
 
-    print("loop through model outputs")
-    for idx, whatever in enumerate(outputs):
-        print(idx, whatever)
+    #attention = outputs.attentions
+    #print('attentions: ', attention)
 
     vision_outputs = outputs.vision_model_output.last_hidden_state
+    attention_outputs = outputs.vision_model_output.attentions
 
-    print(vision_outputs.shape)
+    print("loop through attentions")
+    for idx, whatever in enumerate(attention_outputs):
+        print(idx, whatever.shape)
+
+
+    print(attention_outputs.shape)
     img_emb = vision_outputs.detach().cpu()
     img_emb = img_emb[:, 1:, :]
     b, tokens, feat = img_emb.shape

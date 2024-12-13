@@ -37,10 +37,12 @@ def main():
     inputs = processor(images=im_og, text=text, return_tensors="pt").to(device)
 
     with torch.no_grad():
-        outputs = model(**inputs, output_hidden_states=True)
+        outputs = model(**inputs, output_hidden_states=True, output_attentions=True)
 
     decoder_hidden_states = outputs.decoder_hidden_states
     vision_encoder_hidden_states = outputs.encoder_vision_hidden_states
+    attentions = outputs.encoder_attentions
+    print(attentions)
 
     print("loop through model outputs")
     for idx, whatever in enumerate(outputs):
